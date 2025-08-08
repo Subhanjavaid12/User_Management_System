@@ -1,0 +1,35 @@
+<div class="row g-3">
+    <div class="col-md-6">
+        <label for="first_name" class="form-label">First Name</label>
+        <input type="text" class="form-control" id="first_name" value="{{data.first_name}}" placeholder="First Name" name="first_name" required>
+    </div>
+
+    <div class="col-md-6">
+        <label for="last_name" class="form-label">Last Name</label>
+        <input type="text" class="form-control" id="last_name" value="{{data.last_name}}" placeholder="Last Name" name="last_name" required>
+    </div>
+
+    <div class="col-12">
+        <label for="email" class="form-label">Email</label>
+        <input type="email" class="form-control" id="email" value="{{data.email}}" placeholder="john.doe@example.com" name="email" required>
+    </div>
+
+    <div class="col-12">
+        <label for="phone" class="form-label">Phone</label>
+        <input type="text" class="form-control" id="phone" value="{{data.phone}}" placeholder="+1234567890" name="phone" required>
+    </div>
+    <div class="col-12">
+        <label for="password" class="form-label">Password</label>
+        <textarea class="form-control" id="password" name="password" rows="1" placeholder="********"></textarea>
+    </div>
+
+
+    <div class="col-12">
+        <label for="comments" class="form-label">Comments</label>
+        <textarea class="form-control" id="comments" name="comments" rows="4" placeholder="Any relevant notes...">{{data.comments}}</textarea>
+    </div>
+
+    <div class="col-12">
+        <button type="submit" class="btn btn-primary w-100">Submit</button>
+    </div>
+</div> 
