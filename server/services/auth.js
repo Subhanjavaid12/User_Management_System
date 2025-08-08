@@ -74,12 +74,11 @@ export const checkSession = (req, res, next) => {
   if (req.session && req.session.isLoggedIn) {
     next();
   } else {
-    res.redirect('/login');
+    res.redirect('/');
   }
 };
 export const checkPermission = (allowedRoles) => {
   return (req, res, next) => {
-    console.log('hello');
     const userRole = req.session.user.role;
     if (allowedRoles.includes(userRole)) {
       next(); 
@@ -95,3 +94,11 @@ export const noCache = (req, res, next) => {
   res.setHeader('Expires', '0');
   next();
 };
+
+
+
+
+
+
+
+

@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "type": "module",
-   "scripts": {
+  "scripts": {
     "start": "node app.js",
     "dev": "nodemon dotenv/config app.js"
   },
@@ -13,6 +13,7 @@
   "description": "",
   "dependencies": {
     "bcrypt": "^6.0.0",
+    "bcryptjs": "^3.0.2",
     "body-parser": "^2.2.0",
     "bootstrap": "^5.3.7",
     "bootstrap-icons": "^1.13.1",

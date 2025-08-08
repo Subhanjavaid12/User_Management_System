@@ -1,6 +1,7 @@
 import pool from '../../config/db.js';
 import { hashPassword } from '../utils/passwordUtils.js';
-
+import bcrypt from 'bcryptjs';
+// For Login Page
 export const loginPage = (req, res) => {
   try {
     const message = req.query.message || null;
@@ -10,7 +11,7 @@ export const loginPage = (req, res) => {
     res.status(500).send('Server Error');
   }
 };
-
+// To view homepage
 export const view = async (req, res) => {
   try {
     const loggedInUser = req.session.user;
@@ -21,7 +22,7 @@ export const view = async (req, res) => {
     res.status(500).send('Server Error');
   }
 };
-
+// To Eidt user details
 export const edit = async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT * FROM users WHERE id = ?', [req.params.id]);
@@ -31,7 +32,7 @@ export const edit = async (req, res) => {
     res.status(500).send('Server Error');
   }
 };
-
+// To Update user details
 export const update = async (req, res) => {
   try {
     const { id } = req.params; 
@@ -46,7 +47,7 @@ export const update = async (req, res) => {
     res.status(500).send('Server Error');
   }
 };
-
+// To Delete User
 export const deleteUser = async (req, res) => {
   try {
     const userIdToDelete = req.params.id;
@@ -64,7 +65,7 @@ export const deleteUser = async (req, res) => {
     res.status(500).send('Server Error');
   }
 };
-
+// To GetProfile
 export const getProfile = async (req, res) => {
   try {
     const userId = req.session.user.id;
@@ -79,7 +80,7 @@ export const getProfile = async (req, res) => {
     res.status(500).send('Server Error');
   }
 };
-
+// To logout
 export const logout = (req, res) => {
   req.session.destroy((err) => {
     if (err) {
@@ -89,8 +90,7 @@ export const logout = (req, res) => {
     res.redirect('/');
   });
 };
-
-
+// To Reset-Password-Page
 export const resetPassword = (req, res) => {
   try {
    res.render('reset-password')
@@ -99,26 +99,45 @@ export const resetPassword = (req, res) => {
     res.status(500).send('Server Error');
   }
 };
-
-
-export const checkEmail = async (req, res) => {
+// To Check that email is valid or not 
+export const CheckEmail = async (req, res) => {
   try {
     const { email } = req.body;
-    const [rows] = await pool.query('SELECT id, email FROM users WHERE email = ?', [email]);
-    const user = rows[0];
 
+    const [rows] = await pool.query('SELECT id FROM users WHERE email = ?', [email]);
+    const user = rows[0];
     if (user) {
       res.redirect(`/new-password/${user.id}`);
     } else {
-  
+      
       res.render('reset-password', {
-        error: 'Invalid email. No account found with that address.'
+        error: 'No account found with that email address.'
       });
     }
   } catch (error) {
-    console.error('Error in checkEmailAndRedirect:', error);
+    console.error('Error in CheckEmail:', error);
     res.status(500).send('Server Error');
   }
 };
+// To Change Password
+export const simpleSetNewPassword = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { password, confirmPassword } = req.body;
+    if (password !== confirmPassword) {
+      return res.render('new-password', {
+        error: 'Passwords do not match.',
+        UserId: id 
+      });
+    }
+    const newHashedPassword = await bcrypt.hash(password, 10);
+    await pool.query('UPDATE users SET password = ? WHERE id = ?', [newHashedPassword, id]);
+    res.redirect('/');
+
+  } catch (error) {
+    console.error('Error setting new password:', error);
+    res.status(500).send('Server Error');
+  }
+}
 
 
