@@ -4,6 +4,15 @@ const pool = mysql.createPool({
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || "Subh@n123", 
     database: process.env.DB_NAME || 'user_management_system'
+    ,
+ ssl: {
+    // THIS LINE IS THE FIX
+    rejectUnauthorized: true
+  }
+
 });
+
+
+
 
 export default pool;

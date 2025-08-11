@@ -41,6 +41,16 @@ export const update = async (req, res) => {
     const values = [first_name, last_name, email, phone, comments, id];
     
     await pool.query(query, values);
+
+
+    req.session.admin = {
+        id: update.id,
+        name: update.first_name,
+        role: update.role
+      };
+         
+
+
     res.redirect('/home'); 
   } catch (error) {
     console.error('Error updating user:', error);

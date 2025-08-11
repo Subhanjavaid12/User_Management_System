@@ -4,6 +4,7 @@ import { view, edit, update, deleteUser, loginPage, getProfile,
 import { registerUser, loginUser, checkSession,noCache,
     checkPermission} from '../services/auth.js';
 
+
 const router = express.Router();
 
 // Login 
@@ -59,3 +60,7 @@ router.get('/new-password/:id', (req, res) => {
 router.post('/new-password/:id', simpleSetNewPassword);
 
 export default router;
+
+
+
+
