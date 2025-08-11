@@ -13,7 +13,7 @@ export const registerUser = async (req, res) => {
         formData: req.body
       });
     }
-    const [existingUsers] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
+    const [existingUsers] = await pool.query('SELECT * FROM system WHERE email = ?', [email]);
     if (existingUsers.length > 0) {
          return res.render('add-user', { 
         message: 'This email address is already in use. Please use a different one.',
@@ -23,7 +23,7 @@ export const registerUser = async (req, res) => {
 
     const hashedPassword = await hashPassword(password);
     
-    const query = 'INSERT INTO users (first_name, last_name, email, phone, comments, password, role) VALUES (?, ?, ?, ?, ?, ?, ?)';
+    const query = 'INSERT INTO system (first_name, last_name, email, phone, comments, password, role) VALUES (?, ?, ?, ?, ?, ?, ?)';
     const values = [first_name, last_name, email, phone, comments || '', hashedPassword, 'user'];
     
     const [result] = await pool.query(query, values);
@@ -46,7 +46,7 @@ export const registerUser = async (req, res) => {
 export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
-    const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
+    const [rows] = await pool.query('SELECT * FROM system WHERE email = ?', [email]);
     const user = rows[0];
 
     if (!user) {

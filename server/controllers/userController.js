@@ -15,17 +15,17 @@ export const loginPage = (req, res) => {
 export const view = async (req, res) => {
   try {
     const loggedInUser = req.session.user;
-    const [rows] = await pool.query('SELECT * FROM users');
+    const [rows] = await pool.query('SELECT * FROM system');
     res.render('home', { rows, user: loggedInUser });
   } catch (error) {
-    console.error('Error fetching users:', error);
+    console.error('Error fetching system:', error);
     res.status(500).send('Server Error');
   }
 };
 // To Eidt user details
 export const edit = async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT * FROM users WHERE id = ?', [req.params.id]);
+    const [rows] = await pool.query('SELECT * FROM system WHERE id = ?', [req.params.id]);
     res.render('edit-user', { data: rows[0] });
   } catch (error) {
     console.error('Error fetching user for edit:', error);
@@ -37,7 +37,7 @@ export const update = async (req, res) => {
   try {
     const { id } = req.params; 
     const { first_name, last_name, email, phone, comments } = req.body;
-    const query = `UPDATE users SET first_name = ?, last_name = ?, email = ?, phone = ?, comments = ? WHERE id = ?`;
+    const query = `UPDATE system SET first_name = ?, last_name = ?, email = ?, phone = ?, comments = ? WHERE id = ?`;
     const values = [first_name, last_name, email, phone, comments, id];
     
     await pool.query(query, values);
@@ -61,14 +61,14 @@ export const update = async (req, res) => {
 export const deleteUser = async (req, res) => {
   try {
     const userIdToDelete = req.params.id;
-    const [rows] = await pool.query('SELECT role FROM users WHERE id = ?', [userIdToDelete]);
+    const [rows] = await pool.query('SELECT role FROM system WHERE id = ?', [userIdToDelete]);
     if (rows.length === 0) {
       return res.status(404).send('User not found.');
     }
     if (rows[0].role === 'admin') {
       return res.status(403).send('Forbidden: Administrator accounts cannot be deleted.');
     }
-    await pool.query('DELETE FROM users WHERE id = ?', [userIdToDelete]);
+    await pool.query('DELETE FROM system WHERE id = ?', [userIdToDelete]);
     res.redirect('/home');
   } catch (error) {
     console.error('Error deleting user:', error);
@@ -80,7 +80,7 @@ export const getProfile = async (req, res) => {
   try {
     const userId = req.session.user.id;
     
-    const [rows] = await pool.query('SELECT id, first_name, last_name, email, phone, comments FROM users WHERE id = ?', [userId]);
+    const [rows] = await pool.query('SELECT id, first_name, last_name, email, phone, comments FROM system WHERE id = ?', [userId]);
     if (rows.length === 0) {
       return res.status(404).send('User not found.');
     }
@@ -114,7 +114,7 @@ export const CheckEmail = async (req, res) => {
   try {
     const { email } = req.body;
 
-    const [rows] = await pool.query('SELECT id FROM users WHERE email = ?', [email]);
+    const [rows] = await pool.query('SELECT id FROM system WHERE email = ?', [email]);
     const user = rows[0];
     if (user) {
       res.redirect(`/new-password/${user.id}`);
@@ -141,7 +141,7 @@ export const simpleSetNewPassword = async (req, res) => {
       });
     }
     const newHashedPassword = await bcrypt.hash(password, 10);
-    await pool.query('UPDATE users SET password = ? WHERE id = ?', [newHashedPassword, id]);
+    await pool.query('UPDATE system SET password = ? WHERE id = ?', [newHashedPassword, id]);
     res.redirect('/');
 
   } catch (error) {
