@@ -1,6 +1,7 @@
 import express from 'express';
 import { view, edit, update, deleteUser, loginPage, getProfile,
-  logout, resetPassword, CheckEmail,simpleSetNewPassword} from '../controllers/userController.js';
+  logout, resetPassword, handleForgotPasswordRequest,showResetPasswordForm,
+  handleResetPasswordSubmission,checkEmail} from '../controllers/userController.js';
 import { registerUser, loginUser, checkSession,noCache,
     checkPermission} from '../services/auth.js';
 
@@ -43,7 +44,7 @@ router.get('/resetPassword', resetPassword);
 
 
 // Is entered email is vaild or not
-router.post('/newPassword', CheckEmail);
+router.post('/newPassword', checkEmail);
 
 router.get('/new-password/:id', (req, res) => {
   const userId = req.params.id
@@ -52,12 +53,29 @@ router.get('/new-password/:id', (req, res) => {
 
 
 // New password
-router.get('/new-password/:id', (req, res) => {
-  const userId = req.params.id
-  res.render('new-password', { id: userId });
+// router.get('/new-password/:id', (req, res) => {
+//   const userId = req.params.id
+//   res.render('new-password', { id: userId });
+// });
+
+// router.post('/new-password/:id', simpleSetNewPassword);
+
+// router.post('/newPassword', CheckEmail);
+
+
+// --- FORGOT PASSWORD WORKFLOW ---
+
+// Route to DISPLAY the initial form where the user enters their email.
+// This renders your 'reset-password.hbs' file.
+router.get('/new-password', (req, res) => {
+  res.render('new-password', { message: null });
 });
 
-router.post('/new-password/:id', simpleSetNewPassword);
+router.post('/reset-password', handleForgotPasswordRequest);
+router.get('/new-password/:token', showResetPasswordForm);
+router.post('/new-password/:token', handleResetPasswordSubmission);
+
+
 
 export default router;
 

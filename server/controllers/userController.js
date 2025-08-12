@@ -1,6 +1,12 @@
 import pool from '../../config/db.js';
 import { hashPassword } from '../utils/passwordUtils.js';
 import bcrypt from 'bcryptjs';
+
+import crypto from 'crypto'; 
+import { sendEmail } from '../utils/emailSender.js'; 
+
+
+
 // For Login Page
 export const loginPage = (req, res) => {
   try {
@@ -109,19 +115,63 @@ export const resetPassword = (req, res) => {
     res.status(500).send('Server Error');
   }
 };
+
+
 // To Check that email is valid or not 
-export const CheckEmail = async (req, res) => {
+// export const CheckEmail = async (req, res) => {
+//   try {
+//     const { email } = req.body;
+
+//     const [rows] = await pool.query('SELECT id FROM system WHERE email = ?', [email]);
+//     const user = rows[0];
+//     console.log([rows])
+//     if (user) {
+//       res.redirect(`/new-password/${user.id}`);
+//     } else {
+      
+//       res.render('reset-password', {
+//         error: 'No account found with that email address.'
+//       });
+//     }
+//   } catch (error) {
+//     console.error('Error in CheckEmail:', error);
+//     res.status(500).send('Server Error');
+//   }
+// };
+// // To Change Password
+// export const simpleSetNewPassword = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const { password, confirmPassword } = req.body;
+//     if (password !== confirmPassword) {
+//       return res.render('new-password', {
+//         error: 'Passwords do not match.',
+//         UserId: id 
+//       });
+//     }
+//     const newHashedPassword = await bcrypt.hash(password, 10);
+//     await pool.query('UPDATE system SET password = ? WHERE id = ?', [newHashedPassword, id]);
+//     res.redirect('/');
+
+//   } catch (error) {
+//     console.error('Error setting new password:', error);
+//     res.status(500).send('Server Error');
+//   }
+// }
+
+
+export const checkEmail = async (req, res) => {
   try {
     const { email } = req.body;
-
-    const [rows] = await pool.query('SELECT id FROM system WHERE email = ?', [email]);
+       const [rows] = await pool.query('SELECT id FROM system WHERE email = ?', [email]);
     const user = rows[0];
-    if (user) {
-      res.redirect(`/new-password/${user.id}`);
+
+       if (user) {
+           res.redirect(`/new-password/${user.id}`);
     } else {
-      
+     
       res.render('reset-password', {
-        error: 'No account found with that email address.'
+        error: 'Invalid email. No account found with that address.'
       });
     }
   } catch (error) {
@@ -129,25 +179,109 @@ export const CheckEmail = async (req, res) => {
     res.status(500).send('Server Error');
   }
 };
-// To Change Password
-export const simpleSetNewPassword = async (req, res) => {
+
+
+
+
+
+
+export const handleForgotPasswordRequest = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { password, confirmPassword } = req.body;
-    if (password !== confirmPassword) {
-      return res.render('new-password', {
-        error: 'Passwords do not match.',
-        UserId: id 
+    const { email } = req.body;
+    const [rows] = await pool.query('SELECT * FROM system WHERE email = ?', [email]);
+    const user = rows[0];
+
+    if (user) {
+      const resetToken = crypto.randomBytes(32).toString('hex');
+      const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+      const expirationDate = new Date(Date.now() + 15 * 60 * 1000);
+      
+      await pool.query(
+        'UPDATE system SET resetPassword = ?, resetExpires = ? WHERE id = ?',
+        [hashedToken, expirationDate, user.id]
+      );
+
+     
+      const yesLink = `${req.protocol}://${req.get('host')}/reset-password/${resetToken}`;
+      const noLink = `${req.protocol}://${req.get('host')}/login`;
+
+      const message = `Hello ${user.first_name},\n\nWe received a request to reset the password for your account. Are you sure you want to proceed?\n\nClick YES to continue:\n${yesLink}\n\nClick NO to cancel:\n${noLink}\n\nThis link is valid for 15 minutes. If you did not request this, please ignore this email.`;
+
+      await sendEmail({
+        email: user.email,
+        subject: 'Confirm Your Password Reset Request',
+        message: message,
       });
     }
-    const newHashedPassword = await bcrypt.hash(password, 10);
-    await pool.query('UPDATE system SET password = ? WHERE id = ?', [newHashedPassword, id]);
-    res.redirect('/');
+
+
+    res.render('reset-password', {
+      message: 'If an account with that email exists, a confirmation link has been sent.'
+    });
 
   } catch (error) {
-    console.error('Error setting new password:', error);
+    console.error('Forgot Password Error:', error);
+    
+    res.render('reset-password', {
+      message: 'If an account with that email exists, a confirmation link has been sent.'
+    });
+  }
+};
+
+export const showResetPasswordForm = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    const query = 'SELECT id FROM system WHERE resetPassword = ? AND resetExpires > NOW()';
+    const [rows] = await pool.query(query, [hashedToken]);
+    const user = rows[0];
+
+    if (!user) {
+      return res.render('message', { title: 'Link Expired', message: 'This password reset link is invalid or has expired.' });
+    }
+
+    res.render('new-password', { token: token, error: null });
+
+  } catch (error) {
+    console.error('Show Reset Form Error:', error);
     res.status(500).send('Server Error');
   }
-}
+};
 
 
+export const handleResetPasswordSubmission = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { password, confirmPassword } = req.body;
+
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+    const query = 'SELECT id FROM system WHERE resetPassword = ? AND resetExpires > NOW()';
+    const [rows] = await pool.query(query, [hashedToken]);
+    const user = rows[0];
+
+    if (!user) {
+      return res.render('message', { title: 'Link Expired', message: 'This password reset link is invalid or has expired.' });
+    }
+
+    if (password !== confirmPassword) {
+      return res.render('new-password', {
+        token: token,
+        error: 'Passwords do not match.'
+      });
+    }
+
+    const newHashedPassword = await bcrypt.hash(password, 12);
+
+    await pool.query(
+      'UPDATE system SET password = ?, resetPassword = NULL, resetExpires = NULL WHERE id = ?',
+      [newHashedPassword, user.id]
+    );
+
+    res.redirect('/login?message=Password has been reset successfully.');
+
+  } catch (error) {
+    console.error('Handle Reset Password Submission Error:', error);
+    res.status(500).send('Server Error');
+  }
+};

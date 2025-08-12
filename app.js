@@ -6,11 +6,13 @@ import userRoutes from './server/routes/user.js';
 import pool from "./config/db.js";
 import session from 'express-session';
 
+
 // Express 
 const app = express();
 const port = process.env.PORT || 5000;
 
 app.use(methodOverride('_method'));
+
 
 // Middlewaer
 app.use(express.static('public')); 
