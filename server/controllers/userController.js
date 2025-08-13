@@ -42,9 +42,9 @@ export const edit = async (req, res) => {
 export const update = async (req, res) => {
   try {
     const { id } = req.params; 
-    const { first_name, last_name, email, phone, comments } = req.body;
-    const query = `UPDATE system SET first_name = ?, last_name = ?, email = ?, phone = ?, comments = ? WHERE id = ?`;
-    const values = [first_name, last_name, email, phone, comments, id];
+    const { first_name, last_name, email, phone, comments, password } = req.body;
+    const query = `UPDATE system SET first_name = ?, last_name = ?, email = ?, phone = ?, comments = ?, password = ?  WHERE id = ?`;
+    const values = [first_name, last_name, email, phone, comments,password, id];
     
     await pool.query(query, values);
 
@@ -115,51 +115,7 @@ export const resetPassword = (req, res) => {
     res.status(500).send('Server Error');
   }
 };
-
-
-// To Check that email is valid or not 
-// export const CheckEmail = async (req, res) => {
-//   try {
-//     const { email } = req.body;
-
-//     const [rows] = await pool.query('SELECT id FROM system WHERE email = ?', [email]);
-//     const user = rows[0];
-//     console.log([rows])
-//     if (user) {
-//       res.redirect(`/new-password/${user.id}`);
-//     } else {
-      
-//       res.render('reset-password', {
-//         error: 'No account found with that email address.'
-//       });
-//     }
-//   } catch (error) {
-//     console.error('Error in CheckEmail:', error);
-//     res.status(500).send('Server Error');
-//   }
-// };
-// // To Change Password
-// export const simpleSetNewPassword = async (req, res) => {
-//   try {
-//     const { id } = req.params;
-//     const { password, confirmPassword } = req.body;
-//     if (password !== confirmPassword) {
-//       return res.render('new-password', {
-//         error: 'Passwords do not match.',
-//         UserId: id 
-//       });
-//     }
-//     const newHashedPassword = await bcrypt.hash(password, 10);
-//     await pool.query('UPDATE system SET password = ? WHERE id = ?', [newHashedPassword, id]);
-//     res.redirect('/');
-
-//   } catch (error) {
-//     console.error('Error setting new password:', error);
-//     res.status(500).send('Server Error');
-//   }
-// }
-
-
+// Check email
 export const checkEmail = async (req, res) => {
   try {
     const { email } = req.body;
@@ -179,12 +135,7 @@ export const checkEmail = async (req, res) => {
     res.status(500).send('Server Error');
   }
 };
-
-
-
-
-
-
+// Handle ForgotPassword
 export const handleForgotPasswordRequest = async (req, res) => {
   try {
     const { email } = req.body;
@@ -195,15 +146,14 @@ export const handleForgotPasswordRequest = async (req, res) => {
       const resetToken = crypto.randomBytes(32).toString('hex');
       const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
       const expirationDate = new Date(Date.now() + 15 * 60 * 1000);
-      
       await pool.query(
         'UPDATE system SET resetPassword = ?, resetExpires = ? WHERE id = ?',
         [hashedToken, expirationDate, user.id]
       );
 
      
-      const yesLink = `${req.protocol}://${req.get('host')}/reset-password/${resetToken}`;
-      const noLink = `${req.protocol}://${req.get('host')}/login`;
+      const yesLink = `${req.protocol}://${req.get('host')}/new/${resetToken}`;
+      const noLink = `${req.protocol}://${req.get('host')}/`;
 
       const message = `Hello ${user.first_name},\n\nWe received a request to reset the password for your account. Are you sure you want to proceed?\n\nClick YES to continue:\n${yesLink}\n\nClick NO to cancel:\n${noLink}\n\nThis link is valid for 15 minutes. If you did not request this, please ignore this email.`;
 
@@ -214,17 +164,15 @@ export const handleForgotPasswordRequest = async (req, res) => {
       });
     }
 
-
+  
     res.render('reset-password', {
-      message: 'If an account with that email exists, a confirmation link has been sent.'
+      message: 'If the email is register link has been'
     });
-
+  
   } catch (error) {
     console.error('Forgot Password Error:', error);
     
-    res.render('reset-password', {
-      message: 'If an account with that email exists, a confirmation link has been sent.'
-    });
+  
   }
 };
 
@@ -232,7 +180,7 @@ export const showResetPasswordForm = async (req, res) => {
   try {
     const { token } = req.params;
     const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
-
+ 
     const query = 'SELECT id FROM system WHERE resetPassword = ? AND resetExpires > NOW()';
     const [rows] = await pool.query(query, [hashedToken]);
     const user = rows[0];
@@ -241,7 +189,7 @@ export const showResetPasswordForm = async (req, res) => {
       return res.render('message', { title: 'Link Expired', message: 'This password reset link is invalid or has expired.' });
     }
 
-    res.render('new-password', { token: token, error: null });
+res.render('new-password', { token: token, error: null });
 
   } catch (error) {
     console.error('Show Reset Form Error:', error);
@@ -253,6 +201,7 @@ export const showResetPasswordForm = async (req, res) => {
 export const handleResetPasswordSubmission = async (req, res) => {
   try {
     const { token } = req.params;
+     console.log("3. TOKEN RECEIVED WITH SUBMISSION:", token);
     const { password, confirmPassword } = req.body;
 
     const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
@@ -263,25 +212,26 @@ export const handleResetPasswordSubmission = async (req, res) => {
     if (!user) {
       return res.render('message', { title: 'Link Expired', message: 'This password reset link is invalid or has expired.' });
     }
-
+   
     if (password !== confirmPassword) {
       return res.render('new-password', {
         token: token,
         error: 'Passwords do not match.'
       });
     }
-
-    const newHashedPassword = await bcrypt.hash(password, 12);
-
+    
+    const newHashedPassword = await bcrypt.hash(password, 10);
     await pool.query(
       'UPDATE system SET password = ?, resetPassword = NULL, resetExpires = NULL WHERE id = ?',
       [newHashedPassword, user.id]
     );
 
-    res.redirect('/login?message=Password has been reset successfully.');
+    res.redirect('/');
 
   } catch (error) {
     console.error('Handle Reset Password Submission Error:', error);
     res.status(500).send('Server Error');
   }
 };
+
+

@@ -39,7 +39,7 @@ router.delete('/deleteuser/:id', checkSession,  checkPermission(['admin']), dele
 router.get('/log', logout);
 
 
-// Reset Password
+// Reset Password Page
 router.get('/resetPassword', resetPassword);
 
 
@@ -52,30 +52,12 @@ router.get('/new-password/:id', (req, res) => {
 });
 
 
-// New password
-// router.get('/new-password/:id', (req, res) => {
-//   const userId = req.params.id
-//   res.render('new-password', { id: userId });
-// });
 
-// router.post('/new-password/:id', simpleSetNewPassword);
-
-// router.post('/newPassword', CheckEmail);
-
-
-// --- FORGOT PASSWORD WORKFLOW ---
-
-// Route to DISPLAY the initial form where the user enters their email.
-// This renders your 'reset-password.hbs' file.
-router.get('/new-password', (req, res) => {
-  res.render('new-password', { message: null });
-});
+//  FORGOT PASSWORD 
 
 router.post('/reset-password', handleForgotPasswordRequest);
-router.get('/new-password/:token', showResetPasswordForm);
-router.post('/new-password/:token', handleResetPasswordSubmission);
-
-
+router.get('/new/:token', showResetPasswordForm);
+router.post('/new/:token', handleResetPasswordSubmission);
 
 export default router;
 
